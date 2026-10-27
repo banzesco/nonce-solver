@@ -17,8 +17,25 @@ k=len(cls[0])
 cbs={3:['2.5','2.3','2.6','2.4'],4:['3.0','2.8','3.1','2.9'],5:['5.4','5.0','5.6','5.2']}.get(k,['5.4','5.0','5.6','5.2'])
 ncpu=os.cpu_count() or 2
 procs=[]
+if k!=5:
+    open('cdcl.py','w').write('''
+import sys,random,threading
+from pysat.solvers import Solver
+seed=int(sys.argv[1]); secs=int(sys.argv[2])
+L=[l.split() for l in open('job.cnf').read().strip().split(chr(10))]
+nv=int(L[0][0]); cls=[[int(x) for x in l if x!='0'] for l in L[1:] if l]
+random.seed(seed)
+S=Solver(name='cadical153' if seed%2==0 else 'glucose4',bootstrap_with=cls)
+if seed%3: S.set_phases([v if random.random()<0.5 else -v for v in range(1,nv+1)])
+t=threading.Timer(secs,lambda:S.interrupt()); t.start()
+if S.solve_limited(expect_interrupt=True):
+    m=S.get_model(); print(''.join('1' if m[i]>0 else '0' for i in range(nv)))
+t.cancel()
+''')
 for j in range(ncpu):
     f=open('out%d.txt'%j,'w')
+    if k!=5:
+        procs.append(subprocess.Popen(['timeout',str(secs+5),'python3','cdcl.py',str(idx*1000+j),str(secs)],stdout=f,stderr=subprocess.DEVNULL)); continue
     procs.append(subprocess.Popen(['timeout',str(secs),'./ps',cbs[j%len(cbs)],'100000000000','0','best%d.txt'%j,str(idx*1000+j)],stdin=open(cnf),stdout=f,stderr=subprocess.DEVNULL))
 def ok(a):
     if len(a)!=nv: return False
