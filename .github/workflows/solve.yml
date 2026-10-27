@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: build
-        run: gcc -O3 -march=native -o ps probsat.c
+        run: gcc -O3 -march=native -o ps probsat.c -lm && pip install -q python-sat
       - name: solve
         env:
           JOB: ${{ inputs.job }}
