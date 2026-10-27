@@ -1,12 +1,16 @@
 import os, subprocess, time, sys
 job=os.environ['JOB']; secs=int(os.environ.get('SECS','780')); idx=int(os.environ['IDX'])
-cnf='jobs/%s.cnf'%job
+import glob, gzip
+parts=sorted(glob.glob('jobs/%s/part*'%job))
+cnf='job.cnf'
+open(cnf,'wb').write(gzip.decompress(b''.join(open(p,'rb').read() for p in parts)))
 lines=open(cnf).read().split('\n')
 cls=[]; nv=0
 for l in lines:
     l=l.strip()
     if not l or l[0] in 'c%': continue
     if l[0]=='p': nv=int(l.split()[2]); continue
+    if nv==0 and len(l.split())==2: nv=int(l.split()[0]); continue
     c=[int(x) for x in l.split() if x!='0']
     if c: cls.append(c)
 k=len(cls[0])
